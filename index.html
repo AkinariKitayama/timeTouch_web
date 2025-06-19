@@ -22,22 +22,6 @@
       width: 45%;
       height: auto;
     }
-    #progressBar {
-      position: absolute;
-      top: 5%;
-      right: 5%;
-      width: 200px;
-      height: 15px;
-      border: 1.5px solid white;
-      background: transparent;
-      z-index: 10;
-    }
-    #progressFill {
-      height: 100%;
-      width: 0%;
-      background-color: white;
-      transition: width 0s;
-    }
     .container{
       position: relative;
       width: 100vw;
@@ -76,7 +60,6 @@
     <!-- SVG Path Properties for curved seekbars -->
   <script src="https://cdn.jsdelivr.net/npm/svg-path-properties@1.0.3/dist/svg-path-properties.min.js"></script>
 </head>
-
 <body>
 
   <div class="container">
@@ -89,9 +72,6 @@
   </div>
 
   <video id="videoFootage" autoplay muted playsinline loop></video>
-  <div id="progressBar">
-    <div id="progressFill"></div>
-  </div>
    
   <div id = "dualContainer">
   <video id = "videoL" autoplay muted playsinline loop></video>
@@ -101,9 +81,8 @@
     <video id="videoFootage" autoplay muted playsinline loop></video>
   </div>
 
-  <script src ="JavaScript.js">
 
-  /*
+  <script> 
 
   //ビデオ入れ
     const mapMargin = 0.04;
@@ -1642,7 +1621,7 @@
     //認識開始・終了ボタン
     /* document.getElementById('start')
       .addEventListener('click', () => camera.start()); */
-      /*
+      
 window.addEventListener("DOMContentLoaded", () => {
     camera.start();
     switchVideo(0);
@@ -1740,71 +1719,6 @@ window.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
- 
-    // function updateFps(){
-    //   frameCount ++;
-    //   const now = performance.now();
-    //   const deltaTime = now - lastT;
-    //   if(deltaTime >= 1000){
-    //     fps = Math.round((frameCount * 1000) /deltaTime);
-    //     frameCount = 0;
-    //     lastT = now;
-    //   }
-    //   console.log("fps;", fps);
-    // }
-
-    // function starProgress() {
-    //   const fill = document.getElementById("progressFill");
-    //   fill.style.transition = "none";
-    //   fill.style.width = "0%";
-
-    //   setTimeout(() => {
-    //     fill.style.transition = "width 10s linear";
-    //     fill.style.width = "100%"
-    //   }, 50);
-    //   setTimeout(() => {
-    //     switchVideo(currentVideoIndex + 1);
-    //     starProgress();
-    //   },10000);
-    // }
-
-    const fill = document.getElementById("progressFill");
-    let progress = 0;
-    const duration = 10 * 1000;
-    let lastTimeStamp = null;
-    let isPused = false;
-
-    function updateProgress(timeStamp) {
-      if(lastTimeStamp === null) lastTimeStamp = timeStamp;
-      if(!isPused) {
-        const delta = timeStamp - lastTimeStamp;
-        progress += delta;
-        lastTimeStamp = timeStamp;
-
-        const ratio = Math.min(progress / duration, 1);
-        fill.style.width = "${ratio * 100}%";
-      }
-      if(progress < duration) {
-        requestAnimationFrame(updateProgress);
-      } else {
-        switchVideo(currentVideoIndex + 1);
-        resetProgress();
-      }
-     }
-    function resetProgress(){
-      progress = 0;
-      lastTimeStamp = null;
-      fill.style.width = "0%";
-      requestAnimationFrame(updateProgress);
-    }
-    if(isPinching || wasPinching) {
-      isPused = true;
-    } else {
-      isPused = false;
-    }
-
-  requestAnimationFrame(updateProgress);
-
 
 </script> 
 
