@@ -13,6 +13,7 @@
      transform: translateX(-50%) translateY(-50%);
      min-width: 100%;
      min-height: 100%;
+     
      }
     #videoL{
       width: 45%;
@@ -86,7 +87,7 @@
   <script>    
 
   //ビデオ入れ
-    const mapMargin = 0.04;
+    const mapMargin = 0.02;
     const videoSources = [
      {
       src: "./movs/tennisball.mp4",
@@ -1301,7 +1302,7 @@
   
 });
 
-    
+    let isOutputFullscreen = false;
     
     let currentVideoIndex = 0;
     let currentConfig = videoSources[currentVideoIndex]; 
@@ -1318,6 +1319,8 @@
     
     var currentTimeHis = [];
     
+
+  
     function switchVideo(toIndex){
       isPinching = false;
       wasPinching = false;
@@ -1378,7 +1381,7 @@
 
     //手検出のロストフレームカウント
     let lostFrames = 0;
-    const maxLostFrames = 25;
+    const maxLostFrames = 20;
 
     let stopCurrentTime = 0;
     const stopMax = 300;
@@ -1427,9 +1430,7 @@
         const end = results.multiHandLandmarks[0][8];
         const alpha = parseFloat(pointAlpha);
 
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+       
 
         ctx.beginPath();
         ctx.moveTo(start.x * canvas.width, start.y * canvas.height);
@@ -1440,21 +1441,21 @@
         ctx.stroke();
       }
           if(isPinching) {
-            pointAlpha -= 0.05;
+            pointAlpha -= 0.2;
             if(pointAlpha < 0) pointAlpha = 0;
           } else {
-            pointAlpha += 0.05;
+            pointAlpha += 0.2;
             if(pointAlpha > 1) pointAlpha = 1;
           }
 
 
-      const frameTime = Array.isArray(currentConfig.dual)
-        ? videoL.currentTime
-        : videoFootage.currentTime;
-      currentTimeHis.push(frameTime);
-      if (currentTimeHis.length > 240) {
-        currentTimeHis.shift();
-      }
+      // const frameTime = Array.isArray(currentConfig.dual)
+      //   ? videoL.currentTime
+      //   : videoFootage.currentTime;
+      // currentTimeHis.push(frameTime);
+      // if (currentTimeHis.length > 240) {
+      //   currentTimeHis.shift();
+      // }
 
       // --- 手のランドマークを左右反転して描画 ---
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
@@ -1500,7 +1501,7 @@
         ctx.restore();
        
 
-       
+
         results.multiHandLandmarks.forEach(marks => {
           let newTarget = 0;
           let duration = 0;
@@ -1563,7 +1564,7 @@
               distVal
             );
             const lastTime = currentTimeHis.at(-1);
-            console.log(lastTime);
+            //console.log(lastTime);
             
             if (!isPinching) {
               isPinching = true;
@@ -1571,7 +1572,7 @@
             }
           } else {
             const lastTime = currentTimeHis.at(-1);
-            console.log(lastTime);
+           // console.log(lastTime);
             isPinching = false;
             if (!isPinching) {
               if(currentConfig.dual){
@@ -1583,6 +1584,8 @@
             }
           }
         
+
+if(isOutputFullscreen) return;
 
           // ヒットポイント外で wasPinching をリセット
           if (!currentConfig.hitPoint(fingPosX, fingPosY)) {
@@ -1678,7 +1681,13 @@
       videoR.play().catch(() => {});
       lostFrames = 0;
       }
+      // const videoElem = document.getElementById("videoFootage");
+      // const videoOpacity = (1 - pointAlpha);
+      // const targetOpacity = Math.min(Math.max(videoOpacity, 0.8), 1);
+      // videoElem.style.opacity = targetOpacity;
+
     }); // hands.onResults
+  
   
     
 
@@ -1731,7 +1740,7 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    const outputElem = document.getElementById("output");
+    const output = document.getElementById("output");
     const videos = document.getElementById("videoFootage");
     const dualVideos = document.getElementById("dualContainer");
 
@@ -1741,32 +1750,26 @@ window.addEventListener("DOMContentLoaded", () => {
       } else if (event.key === "a") {
         switchVideo(currentVideoIndex - 1);
       } else if (event.key == "d") {
-        if (outputElem.style.display === "none") {
+        if (output.style.display === "none") {
 
-          outputElem.classList.remove("hidden");
-          outputElem.style.display = "block";
-          outputElem.style.position = "absolute";
-          outputElem.style.top = "20%";
-          outputElem.style.left = "50%";
-          outputElem.style.transform = "translateX(-50%) scale(1.6)";
-          outputElem.style.zIndex = "1000";
-          videos.style.position = "absolute";
-          videos.style.top = "55%";
-          videos.style.left = "50%";
-          videos.style.transform = "translateX(-50%) scale(0.6)";
-          videos.style.zIndex = "0";
-          videos.style.width = "";
-          videos.style.margin = "";
-          dualVideos.style.width = "auto";
-          dualVideos.style.margin = "40px auto";
-          //絶対配置を解除
-          dualVideos.style.position = "";
-          dualVideos.style.top = "";
-          dualVideos.style.left = "";
-          dualVideos.style.transform = "";
+          isOutputFullscreen = true;
+          output.style.position = "fixed";
+          output.style.top = 0;
+          output.style.left = 0;
+          output.style.width = "100vw";
+          output.style.height = "100vh";
+          output.style.zIndex = "9999";
+          output.style.display = "block";
+          output.classList.remove("hidden");
+      
+          videos.style.display = "none";
+          dualVideos.style.display = "none";
+
         } else {
-          outputElem.classList.add("hidden");
-          outputElem.style.display = "none";
+          isOutputFullscreen = false;
+          output.classList.add("hidden");
+          output.style.display = "none";
+          videos.style.display = "block"
           videos.style.width = "60%";
           videos.style.margin = "0";
           videos.style.position = "absolute";
@@ -1774,6 +1777,7 @@ window.addEventListener("DOMContentLoaded", () => {
           videos.style.left = "50%";
           videos.style.transform = "translate(-50%, -50%)";
           videos.style.zIndex = "";
+          dualVideos.style.display = "block";
           dualVideos.style.width = "80%";
           dualVideos.style.margin = "0 auto";
           dualVideos.style.position = "absolute";
@@ -1783,6 +1787,9 @@ window.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
+    
+  
+
 
 </script> 
 
