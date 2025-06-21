@@ -46,11 +46,13 @@
         transform: scaleX(-1);
         transform-origin: center;
         
-        transition: opacity 0.5s ease;
+        background-color: black;
+        opacity: 1;
     }
-    #output.hidden{
+    output video{
       opacity: 0;
     }
+
     
 </style>
   <!-- 3つのライブラリを読み込む -->
@@ -72,17 +74,16 @@
   </div>
 
   <video id="videoFootage" autoplay muted playsinline loop></video>
-   
-  <div id = "dualContainer">
-  <video id = "videoL" autoplay muted playsinline loop></video>
-  <video id = "videoR" autoplay muted playsinline loop></video>
-
-  <div id="videoContainer" style="position: relative;">
-    <video id="videoFootage" autoplay muted playsinline loop></video>
+  
+  <div id="dualContainer">
+    <video id="videoL" autoplay muted playsinline loop></video>
+    <video id="videoR" autoplay muted playsinline loop></video>
   </div>
 
+  
 
-  <script> 
+
+  <script>    
 
   //ビデオ入れ
     const mapMargin = 0.04;
@@ -99,7 +100,7 @@
         //正規化比率を算出
         const t = (x - this.xMin) / (this.xMax - this.xMin);
         //0~1にクリップ
-        const clip = Math.min(Math.max(t, 0), 1);
+        const clip = Math.min(Math.max(t, 0.01), 0.99);
         return (1 - clip) * duration;
       }
       },
@@ -1308,6 +1309,7 @@
     const video = document.getElementById('input');
     const canvas = document.getElementById('output');
     const ctx = canvas.getContext('2d');
+
     
     const videoFootage = document.getElementById('videoFootage');
     const dualContainer = document.getElementById("dualContainer");
@@ -1368,6 +1370,7 @@
 
     let isPinching = false;
     let wasPinching = false;
+    let pointAlpha = 1.0;
     
     // let frameCount = 0;
     // let lastT = 0;
@@ -1412,8 +1415,39 @@
     //形状認識した結果の取得
     hands.onResults(results => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-      // 毎フレーム currentTime を履歴に追加
+      //ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      if(
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length > 0 &&
+        results.multiHandLandmarks[0] &&
+        results.multiHandLandmarks[0].length > 8
+      ) {
+        const start = results.multiHandLandmarks[0][4];
+        const end = results.multiHandLandmarks[0][8];
+        const alpha = parseFloat(pointAlpha);
+
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+
+        ctx.beginPath();
+        ctx.moveTo(start.x * canvas.width, start.y * canvas.height);
+        ctx.lineTo(end.x * canvas.width, end.y * canvas.height);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+         console.log("pointAlpha: ",pointAlpha);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+          if(isPinching) {
+            pointAlpha -= 0.05;
+            if(pointAlpha < 0) pointAlpha = 0;
+          } else {
+            pointAlpha += 0.05;
+            if(pointAlpha > 1) pointAlpha = 1;
+          }
+
+
       const frameTime = Array.isArray(currentConfig.dual)
         ? videoL.currentTime
         : videoFootage.currentTime;
@@ -1421,22 +1455,55 @@
       if (currentTimeHis.length > 240) {
         currentTimeHis.shift();
       }
-      console.log(currentTimeHis[currentTimeHis.length - 1]);
-      ctx.strokeStyle = "yellow";
-      ctx.lineWidth = 11;
 
+      // --- 手のランドマークを左右反転して描画 ---
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         lostFrames = 0;
-        results.multiHandLandmarks.forEach(marks => {
+       
+        // ctx.save();
+        // ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // ctx.translate(canvas.width, 0);
+        // ctx.scale(-1, 1);
+        for (const landmarks of results.multiHandLandmarks) {
+          const alpha = parseFloat(pointAlpha);
+          for (let i = 0; i < landmarks.length; i++) {
+            const landmark = landmarks[i];
+            const x = landmark.x * canvas.width;
+            const y = landmark.y * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            if (i === 4 || i === 8) {
+
+              ctx.fillStyle = `rgba(240, 0, 0)`; 
+            } else {
+              ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            }
+            ctx.fill();
+          }
           
+        //   if (landmarks.length > 8) {
+        //     const x1 = landmarks[8].x * canvas.width;
+        //     const y1 = landmarks[8].y * canvas.height;
+        //     const x2 = landmarks[4].x * canvas.width;
+        //     const y2 = landmarks[4].y * canvas.height;
+
+        //   const alphaa = parseFloat("0.5");
+        //   const R = 255;
+        //   ctx.strokeStyle = "rgb(255, 255, 255, 1)";
+        //   ctx.beginPath();
+        //   ctx.moveTo(x1, y1);
+        //   ctx.lineTo(x2, y2);
+        //   ctx.lineWidth = 2;
+        //   ctx.stroke();
+        // }
+      }
+        ctx.restore();
+       
+
+       
+        results.multiHandLandmarks.forEach(marks => {
           let newTarget = 0;
           let duration = 0;
-
-          // requestAnimationFrame(updateFps);
-
-          // 骨組みとランドマークを描画
-          //drawConnectors(ctx, marks, HAND_CONNECTIONS, { color: 'white', lineWidth: 1 });
-          drawLandmarks(ctx, marks, { color: 'white', radius: 4.2 });
 
           // 指先の座標取得
           const fingPosX = marks[8].x;
@@ -1470,7 +1537,6 @@
           if(historyX8.length > historyLength) historyX8.shift();
           const avgX4 = historyX4.reduce((a, b) => a + b, 0) / historyX4.length;
           const avgX8 = historyX8.reduce((a, b) => a + b, 0) / historyX8.length;
-
 
           const rawX = (fingPosX + fingPosX2) / 2;
           const rawY = (fingPosY + fingPosY2) / 2;
@@ -1512,11 +1578,11 @@
                 videoL.play();
                 videoR.play();
               } else {
-              videoFootage.play();
+                videoFootage.play();
+              }
+            }
           }
-        }
-      }
-    
+        
 
           // ヒットポイント外で wasPinching をリセット
           if (!currentConfig.hitPoint(fingPosX, fingPosY)) {
@@ -1531,7 +1597,6 @@
                 ? videoL.duration
                 : videoFootage.duration;
             let t = newTarget;
-            
 
             if (currentConfig.start && currentConfig.end && isPinching) {
               videoFootage.pause();
@@ -1587,7 +1652,6 @@
               }
             }
           } else if (!(isPinching && wasPinching)) {
-            //const epsilon = 0.05;
             if (Array.isArray(currentConfig.dual)) {
               videoL.play();
               videoR.play();
